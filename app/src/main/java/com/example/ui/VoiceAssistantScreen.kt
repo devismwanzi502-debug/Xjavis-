@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MicOff
 import androidx.compose.material.icons.filled.VolumeUp
@@ -46,12 +47,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.GlowCyanBorder
-import com.example.ui.theme.RgbCyan
-import com.example.ui.theme.RgbLime
-import com.example.ui.theme.RgbMagenta
+import com.example.ui.theme.RainbowBrushHorizontal
+import com.example.ui.theme.RainbowBrushSoft
+import com.example.ui.theme.RainbowCyan
+import com.example.ui.theme.RainbowIndigo
+import com.example.ui.theme.RainbowRose
+import com.example.ui.theme.RainbowViolet
+import com.example.ui.theme.StatusSuccess
 
 @Composable
 fun VoiceAssistantScreen(
@@ -59,6 +61,7 @@ fun VoiceAssistantScreen(
     isSpeaking: Boolean,
     recognizedText: String,
     onToggleListen: () -> Unit,
+    onSendCommand: (String) -> Unit,
     onSpeakTest: (String) -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "Pulse")
@@ -75,7 +78,7 @@ fun VoiceAssistantScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(20.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -84,29 +87,30 @@ fun VoiceAssistantScreen(
                 text = "Voice Assistant HUD",
                 fontSize = 22.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.White
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
-                text = if (isListening) "Listening..." else if (isSpeaking) "Speaking..." else "Tap mic to activate",
-                fontSize = 14.sp,
-                color = if (isListening) RgbCyan else RgbLime
+                text = if (isListening) "Listening to speech..." else if (isSpeaking) "Speaking response..." else "Tap microphone to speak command",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Medium,
+                color = if (isListening) RainbowRose else StatusSuccess
             )
         }
 
         // Pulse Orb Center
         Box(
             contentAlignment = Alignment.Center,
-            modifier = Modifier.size(200.dp)
+            modifier = Modifier.size(190.dp)
         ) {
             Box(
                 modifier = Modifier
-                    .size(160.dp)
+                    .size(150.dp)
                     .scale(pulseScale)
                     .clip(CircleShape)
                     .background(
-                        if (isListening) RgbCyan.copy(alpha = 0.3f)
-                        else RgbMagenta.copy(alpha = 0.15f)
+                        if (isListening) RainbowRose.copy(alpha = 0.25f)
+                        else RainbowIndigo.copy(alpha = 0.15f)
                     )
             )
 
@@ -116,16 +120,19 @@ fun VoiceAssistantScreen(
                     .size(96.dp)
                     .clip(CircleShape)
                     .background(
-                        if (isListening) RgbCyan
-                        else DarkSurfaceVariant
+                        if (isListening) RainbowRose
+                        else MaterialTheme.colorScheme.surface
                     )
-                    .border(2.dp, if (isListening) GlowCyanBorder else DarkBorder, CircleShape)
+                    .border(
+                        BorderStroke(2.dp, if (isListening) RainbowRose else RainbowIndigo),
+                        CircleShape
+                    )
                     .testTag("voice_hud_button")
             ) {
                 Icon(
                     imageVector = if (isListening) Icons.Default.Mic else Icons.Default.MicOff,
                     contentDescription = "Microphone Toggle",
-                    tint = if (isListening) Color.Black else RgbCyan,
+                    tint = if (isListening) Color.White else RainbowIndigo,
                     modifier = Modifier.size(44.dp)
                 )
             }
@@ -133,31 +140,51 @@ fun VoiceAssistantScreen(
 
         // Live Transcript Box
         Card(
-            colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-            border = BorderStroke(1.dp, GlowCyanBorder),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = BorderStroke(1.5.dp, RainbowBrushSoft),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(20.dp)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(20.dp),
+                    .padding(18.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "LIVE SPEECH TRANSCRIPT",
+                    text = "SPEECH TRANSCRIPT TO TEXT",
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
-                    color = RgbCyan,
+                    color = RainbowIndigo,
                     letterSpacing = 1.sp
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = recognizedText.ifBlank { "Say something like \"Open YouTube and search for Davis\" or \"Gaming Mode\"..." },
+                    text = recognizedText.ifBlank { "Say something like \"Open YouTube and search for Dylian Paige\"..." },
                     fontSize = 15.sp,
+                    fontWeight = if (recognizedText.isNotBlank()) FontWeight.Bold else FontWeight.Normal,
                     textAlign = TextAlign.Center,
-                    color = if (recognizedText.isNotBlank()) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (recognizedText.isNotBlank()) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                if (recognizedText.isNotBlank()) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Button(
+                        onClick = { onSendCommand(recognizedText) },
+                        colors = ButtonDefaults.buttonColors(containerColor = RainbowIndigo, contentColor = Color.White),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Execute",
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text("Execute Speech Command", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
             }
         }
 
@@ -166,23 +193,24 @@ fun VoiceAssistantScreen(
             modifier = Modifier.fillMaxWidth()
         ) {
             Button(
-                onClick = { onSpeakTest("PhonePilot voice system active and operational.") },
+                onClick = { onSpeakTest("PhonePilot voice system active and ready.") },
                 modifier = Modifier
                     .weight(1f)
                     .height(48.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = DarkSurfaceVariant),
-                border = BorderStroke(1.dp, DarkBorder),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = BorderStroke(1.dp, RainbowIndigo.copy(alpha = 0.4f)),
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Icon(
                     imageVector = Icons.Default.VolumeUp,
                     contentDescription = null,
-                    tint = RgbLime,
+                    tint = RainbowIndigo,
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Test TTS", color = Color.White)
+                Text("Test TTS Voice", color = MaterialTheme.colorScheme.onSurface, fontWeight = FontWeight.SemiBold)
             }
         }
     }
 }
+

@@ -143,14 +143,17 @@ class MainActivity : ComponentActivity() {
                                 isExecuting = isExecuting,
                                 currentPlan = currentPlan,
                                 lastMessage = lastMessage,
+                                recognizedText = recognizedText,
+                                isListening = isListening,
                                 onSendCommand = { viewModel.sendUserCommand(it) },
-                                onVoiceClick = { selectedTab = AppTab.VOICE }
+                                onVoiceClick = { viewModel.toggleVoiceListening() }
                             )
                             AppTab.VOICE -> VoiceAssistantScreen(
                                 isListening = isListening,
                                 isSpeaking = isSpeaking,
                                 recognizedText = recognizedText,
                                 onToggleListen = { viewModel.toggleVoiceListening() },
+                                onSendCommand = { viewModel.sendUserCommand(it) },
                                 onSpeakTest = { viewModel.speakText(it) }
                             )
                             AppTab.AUTOMATION -> AutomationBuilderScreen(

@@ -147,15 +147,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun sendAutoReply(notification: InterceptedNotification, replyText: String) {
         viewModelScope.launch {
             val sbn = notification.sbn
-            if (sbn != null) {
-                val success = autoReplyEngine.sendDirectReply(sbn, replyText)
-                if (success) {
-                    repository.log("Auto-Reply Sent", "To ${notification.appLabel}: $replyText", "NOTIFICATION")
-                } else {
-                    repository.log("Auto-Reply Failed", "Direct reply intent not found", "WARNING")
-                }
+            val success = autoReplyEngine.sendReplyWithFallback(sbn, notification.appLabel, replyText)
+            if (success) {
+                repository.log("Auto-Reply Sent", "To ${notification.appLabel}: $replyText", "NOTIFICATION")
             } else {
-                repository.log("Auto-Reply Sent", "Reply to ${notification.appLabel}: $replyText", "NOTIFICATION")
+                repository.log("Auto-Reply Attempted", "Sent to ${notification.appLabel}: $replyText", "NOTIFICATION")
             }
         }
     }

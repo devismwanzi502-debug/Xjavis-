@@ -11,30 +11,42 @@ class UiNavigator(private val context: Context) {
     val isAccessibilityEnabled: Boolean
         get() = service != null
 
-    suspend fun clickText(targetText: String): Boolean {
+    suspend fun clickText(targetText: String, maxRetries: Int = 3): Boolean {
         val s = service ?: return false
-        var success = s.clickNodeByText(targetText) || s.clickNodeByDescription(targetText)
-        if (!success) {
+        for (attempt in 0 until maxRetries) {
+            var success = s.clickNodeByText(targetText) || s.clickNodeByDescription(targetText)
+            if (success) return true
+
             // Try fuzzy case-insensitive match from hierarchy
             val hierarchy = s.dumpScreenHierarchy()
             val matchLine = hierarchy.lines().firstOrNull { it.contains(targetText, ignoreCase = true) }
             if (matchLine != null) {
-                // Parse bounds if present
                 val boundsStr = matchLine.substringAfter("bounds=", "").trim()
                 if (boundsStr.isNotEmpty()) {
                     val coords = parseBoundsCenter(boundsStr)
                     if (coords != null) {
-                        return GestureExecutor(context).tap(coords.first, coords.second)
+                        val tapped = GestureExecutor(context).tap(coords.first, coords.second)
+                        if (tapped) return true
                     }
                 }
             }
+
+            // Scroll down on 2nd attempt if target is off-screen
+            if (attempt == 1) {
+                GestureExecutor(context).swipeUp()
+            }
+            delay(600)
         }
-        return success
+        return false
     }
 
-    suspend fun clickSearchButton(): Boolean {
+    suspend fun clickSearchButton(maxRetries: Int = 3): Boolean {
         val s = service ?: return false
-        return s.clickSearchIconOrButton()
+        for (attempt in 0 until maxRetries) {
+            if (s.clickSearchIconOrButton()) return true
+            delay(500)
+        }
+        return false
     }
 
     suspend fun clickSendButton(): Boolean {

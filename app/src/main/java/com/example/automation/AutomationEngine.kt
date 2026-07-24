@@ -58,8 +58,11 @@ class AutomationEngine(private val context: Context) {
         when (actionType) {
             "AUTO_REPLY_TEXT", "SPECIFIC_TEXT" -> {
                 val tts = TextToSpeechManager(context)
-                tts.speak("Sending specific auto-reply: $actionValue")
-                repository.log("Specific Text Reply", "Message: $actionValue Context: $triggerContext", "REPLY")
+                val autoReplyEngine = com.example.notifications.AutoReplyEngine(context)
+                val appLabel = triggerContext.substringAfter("Notification from ").substringBefore(":")
+                val success = autoReplyEngine.sendReplyWithFallback(null, appLabel, actionValue)
+                tts.speak("Auto-reply $actionValue sent to $appLabel.")
+                repository.log("Specific Text Reply", "Success: $success | Message: $actionValue", "REPLY")
             }
             "AUTO_REPLY_AI", "CHATBOT_REPLY" -> {
                 val prompt = "Compose a concise, polite auto-reply (under 15 words) for context: '$triggerContext'. Guidance: '$actionValue'."
@@ -69,9 +72,12 @@ class AutomationEngine(private val context: Context) {
                 } else {
                     aiResponse.trim().removeSurrounding("\"")
                 }
+                val autoReplyEngine = com.example.notifications.AutoReplyEngine(context)
+                val appLabel = triggerContext.substringAfter("Notification from ").substringBefore(":")
+                val success = autoReplyEngine.sendReplyWithFallback(null, appLabel, replyText)
                 val tts = TextToSpeechManager(context)
-                tts.speak("Chatbot AI Auto-reply generated: $replyText")
-                repository.log("Chatbot AI Reply Sent", "AI Reply: $replyText | Context: $triggerContext", "REPLY")
+                tts.speak("Chatbot AI Auto-reply sent: $replyText")
+                repository.log("Chatbot AI Reply Sent", "Success: $success | Reply: $replyText", "REPLY")
             }
             "LAUNCH_APP" -> {
                 appLauncher.launchAppByName(actionValue)

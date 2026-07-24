@@ -77,12 +77,20 @@ fun ChatScreen(
     isExecuting: Boolean,
     currentPlan: List<StepExecutionState>,
     lastMessage: String?,
+    recognizedText: String = "",
+    isListening: Boolean = false,
     onSendCommand: (String) -> Unit,
     onVoiceClick: () -> Unit
 ) {
     val context = LocalContext.current
     var inputQuery by remember { mutableStateOf("") }
     val isAccessibilityActive = PhonePilotAccessibilityService.isConnected.value
+
+    androidx.compose.runtime.LaunchedEffect(recognizedText) {
+        if (recognizedText.isNotBlank()) {
+            inputQuery = recognizedText
+        }
+    }
 
     val quickPrompts = listOf(
         "Open YouTube and search for Dylian Paige",
