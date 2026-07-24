@@ -1,0 +1,8 @@
+{
+  "name": "PhonePilot AI",
+  "description": "Autonomous AI assistant for Android with voice control, accessibility automation, notification management, and local AI memory.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

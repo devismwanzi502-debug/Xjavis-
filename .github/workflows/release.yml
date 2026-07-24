@@ -1,0 +1,61 @@
+name: Release Android APK
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  release:
+    name: Build & Publish Release APK
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'gradle'
+
+      - name: Decode Debug Keystore
+        run: |
+          if [ -f "debug.keystore.base64" ]; then
+            base64 -d debug.keystore.base64 > debug.keystore
+          fi
+
+      - name: Setup Gradle Wrapper
+        run: |
+          if [ ! -f "./gradlew" ]; then
+            gradle wrapper
+          fi
+          chmod +x gradlew
+
+      - name: Prepare .env Configuration
+        env:
+          GEMINI_SECRET: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -n "$GEMINI_SECRET" ]; then
+            echo "GEMINI_API_KEY=$GEMINI_SECRET" > .env
+          else
+            echo "GEMINI_API_KEY=MY_GEMINI_API_KEY" > .env
+          fi
+
+      - name: Build Debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: app/build/outputs/apk/debug/app-debug.apk
+          name: PhonePilot AI Agent ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
