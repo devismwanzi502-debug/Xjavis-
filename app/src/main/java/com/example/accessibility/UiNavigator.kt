@@ -13,7 +13,7 @@ class UiNavigator(private val context: Context) {
 
     suspend fun clickText(targetText: String): Boolean {
         val s = service ?: return false
-        val success = s.clickNodeByText(targetText)
+        var success = s.clickNodeByText(targetText) || s.clickNodeByDescription(targetText)
         if (!success) {
             // Try fuzzy case-insensitive match from hierarchy
             val hierarchy = s.dumpScreenHierarchy()
@@ -34,13 +34,14 @@ class UiNavigator(private val context: Context) {
 
     suspend fun clickSearchButton(): Boolean {
         val s = service ?: return false
-        val searchKeywords = listOf("Search", "Find", "Magnifier", "search_button", "btn_search")
-        for (kw in searchKeywords) {
-            if (s.clickNodeByText(kw)) return true
-        }
-        val nodes = s.findNodesByText("Search")
-        if (nodes.isNotEmpty()) {
-            return s.clickNodeByText("Search")
+        return s.clickSearchIconOrButton()
+    }
+
+    suspend fun clickSendButton(): Boolean {
+        val s = service ?: return false
+        val sendKeywords = listOf("Send", "Submit", "Search", "Enter", "send_button")
+        for (kw in sendKeywords) {
+            if (s.clickNodeByText(kw) || s.clickNodeByDescription(kw)) return true
         }
         return false
     }

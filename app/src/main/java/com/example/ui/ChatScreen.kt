@@ -1,9 +1,12 @@
 package com.example.ui
 
+import android.content.Intent
+import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,9 +25,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.AccessibilityNew
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pending
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,18 +53,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.accessibility.PhonePilotAccessibilityService
 import com.example.ai.StepExecutionState
-import com.example.ui.theme.DarkBorder
-import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.GlowCyanBorder
-import com.example.ui.theme.RgbCyan
-import com.example.ui.theme.RgbLime
-import com.example.ui.theme.RgbMagenta
-import com.example.ui.theme.StatusGreen
+import com.example.ui.theme.RainbowAmber
+import com.example.ui.theme.RainbowBrushHorizontal
+import com.example.ui.theme.RainbowBrushSoft
+import com.example.ui.theme.RainbowCyan
+import com.example.ui.theme.RainbowEmerald
+import com.example.ui.theme.RainbowIndigo
+import com.example.ui.theme.RainbowOrange
+import com.example.ui.theme.RainbowPink
+import com.example.ui.theme.RainbowRose
+import com.example.ui.theme.RainbowViolet
+import com.example.ui.theme.StatusSuccess
 
 @Composable
 fun ChatScreen(
@@ -67,13 +80,16 @@ fun ChatScreen(
     onSendCommand: (String) -> Unit,
     onVoiceClick: () -> Unit
 ) {
+    val context = LocalContext.current
     var inputQuery by remember { mutableStateOf("") }
+    val isAccessibilityActive = PhonePilotAccessibilityService.isConnected.value
 
     val quickPrompts = listOf(
-        "Open YouTube and search for Davis",
-        "Gaming Mode",
+        "Open YouTube and search for Dylian Paige",
+        "Open chat with Mom and say Hello",
+        "Switch to Dark Mode",
         "Set volume to 80%",
-        "Turn Do Not Disturb ON",
+        "Gaming Mode",
         "Go Home"
     )
 
@@ -82,97 +98,185 @@ fun ChatScreen(
             .fillMaxSize()
             .padding(16.dp)
     ) {
-        // Top Status Header Card
+        // Rainbow Top Status Header Card
         Card(
-            colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-            border = BorderStroke(1.dp, GlowCyanBorder),
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(16.dp)
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .border(
+                    BorderStroke(1.5.dp, RainbowBrushHorizontal),
+                    shape = RoundedCornerShape(20.dp)
+                ),
+            shape = RoundedCornerShape(20.dp)
         ) {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(16.dp)
             ) {
-                Box(
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(46.dp)
+                            .clip(CircleShape)
+                            .background(RainbowBrushHorizontal),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = "AI Status",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "PhonePilot Assistant",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = if (isExecuting) "Running step-by-step automation..." else "How can I help automate your phone today?",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    if (isExecuting) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(22.dp),
+                            color = RainbowIndigo,
+                            strokeWidth = 2.5.dp
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Accessibility & Keyboard Access Status Pill
+                Row(
                     modifier = Modifier
-                        .size(44.dp)
-                        .clip(CircleShape)
-                        .background(RgbCyan.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(
+                            if (isAccessibilityActive) StatusSuccess.copy(alpha = 0.12f)
+                            else RainbowOrange.copy(alpha = 0.12f)
+                        )
+                        .clickable {
+                            val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
+                                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                            }
+                            context.startActivity(intent)
+                        }
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SmartToy,
-                        contentDescription = "AI Status",
-                        tint = RgbCyan
+                        imageVector = if (isAccessibilityActive) Icons.Default.CheckCircle else Icons.Default.AccessibilityNew,
+                        contentDescription = "Access Status",
+                        tint = if (isAccessibilityActive) StatusSuccess else RainbowOrange,
+                        modifier = Modifier.size(18.dp)
                     )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column(modifier = Modifier.weight(1f)) {
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "PhonePilot AI Agent",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 16.sp,
-                        color = Color.White
-                    )
-                    Text(
-                        text = if (isExecuting) "Executing Command..." else "Ready for instructions",
+                        text = if (isAccessibilityActive) "Screen & Keyboard Access Active" else "Enable Screen & Keyboard Control Access",
                         fontSize = 12.sp,
-                        color = if (isExecuting) RgbCyan else RgbLime
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (isAccessibilityActive) StatusSuccess else RainbowOrange,
+                        modifier = Modifier.weight(1f)
                     )
-                }
-                if (isExecuting) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = RgbCyan,
-                        strokeWidth = 2.dp
-                    )
+                    if (!isAccessibilityActive) {
+                        Text(
+                            text = "Grant >",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = RainbowRose
+                        )
+                    }
                 }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Quick Suggestion Chips
+        // Human Quick Action Chips with Rainbow Borders
+        Text(
+            text = "Suggested Actions",
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 4.dp, bottom = 6.dp)
+        )
+
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             items(quickPrompts) { prompt ->
-                SuggestionChip(
-                    onClick = { onSendCommand(prompt) },
-                    label = { Text(prompt, fontSize = 12.sp, color = RgbCyan) },
-                    colors = SuggestionChipDefaults.suggestionChipColors(
-                        containerColor = DarkSurfaceVariant
-                    ),
-                    border = SuggestionChipDefaults.suggestionChipBorder(
-                        enabled = true,
-                        borderColor = DarkBorder
-                    )
-                )
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(
+                            BorderStroke(1.dp, RainbowBrushSoft),
+                            shape = RoundedCornerShape(16.dp)
+                        )
+                        .clickable { onSendCommand(prompt) }
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = null,
+                            tint = RainbowViolet,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = prompt,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
         }
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
-        // Plan Execution Progress
+        // Plan Execution Progress Box
         AnimatedVisibility(visible = currentPlan.isNotEmpty()) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-                border = BorderStroke(1.dp, RgbMagenta.copy(alpha = 0.5f)),
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                border = BorderStroke(1.dp, RainbowIndigo.copy(alpha = 0.4f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
+                    .padding(bottom = 12.dp),
                 shape = RoundedCornerShape(16.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        text = "Execution Plan",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = RgbMagenta
-                    )
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = RainbowIndigo,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Automation Steps",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            color = RainbowIndigo
+                        )
+                    }
                     Spacer(modifier = Modifier.height(8.dp))
                     currentPlan.forEach { step ->
                         Row(
@@ -184,14 +288,14 @@ fun ChatScreen(
                             Icon(
                                 imageVector = if (step.isCompleted) Icons.Default.CheckCircle else Icons.Default.Pending,
                                 contentDescription = null,
-                                tint = if (step.isCompleted) RgbLime else MaterialTheme.colorScheme.onSurfaceVariant,
+                                tint = if (step.isCompleted) StatusSuccess else MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.size(18.dp)
                             )
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(
                                 text = step.description,
                                 fontSize = 13.sp,
-                                color = if (step.isCompleted) RgbLime else Color.White
+                                color = if (step.isCompleted) StatusSuccess else MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -202,18 +306,18 @@ fun ChatScreen(
         // Response Banner
         if (!lastMessage.isNullOrBlank()) {
             Card(
-                colors = CardDefaults.cardColors(containerColor = RgbCyan.copy(alpha = 0.15f)),
-                border = BorderStroke(1.dp, RgbCyan),
+                colors = CardDefaults.cardColors(containerColor = RainbowIndigo.copy(alpha = 0.08f)),
+                border = BorderStroke(1.dp, RainbowIndigo.copy(alpha = 0.3f)),
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 16.dp),
-                shape = RoundedCornerShape(12.dp)
+                    .padding(bottom = 12.dp),
+                shape = RoundedCornerShape(14.dp)
             ) {
                 Text(
                     text = lastMessage,
                     modifier = Modifier.padding(12.dp),
                     fontSize = 13.sp,
-                    color = RgbCyan
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }
@@ -228,18 +332,18 @@ fun ChatScreen(
             OutlinedTextField(
                 value = inputQuery,
                 onValueChange = { inputQuery = it },
-                placeholder = { Text("Ask PhonePilot...", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                placeholder = { Text("Ask or tell PhonePilot...", fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 modifier = Modifier
                     .weight(1f)
                     .testTag("chat_input_field"),
-                shape = RoundedCornerShape(24.dp),
+                shape = RoundedCornerShape(28.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = RgbCyan,
-                    unfocusedBorderColor = DarkBorder,
-                    focusedContainerColor = DarkSurfaceVariant,
-                    unfocusedContainerColor = DarkSurfaceVariant,
-                    focusedTextColor = Color.White,
-                    unfocusedTextColor = Color.White
+                    focusedBorderColor = RainbowIndigo,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedTextColor = MaterialTheme.colorScheme.onSurface,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onSurface
                 )
             )
 
@@ -250,13 +354,12 @@ fun ChatScreen(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(DarkSurfaceVariant)
-                    .border(1.dp, RgbMagenta, CircleShape)
+                    .background(RainbowBrushHorizontal)
             ) {
                 Icon(
                     imageVector = Icons.Default.Mic,
                     contentDescription = "Voice Input",
-                    tint = RgbMagenta
+                    tint = Color.White
                 )
             }
 
@@ -272,15 +375,16 @@ fun ChatScreen(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(RgbCyan)
+                    .background(RainbowBrushHorizontal)
                     .testTag("send_command_button")
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Filled.Send,
                     contentDescription = "Send",
-                    tint = Color.Black
+                    tint = Color.White
                 )
             }
         }
     }
 }
+

@@ -2,6 +2,8 @@ package com.example.ui
 
 import android.content.Intent
 import android.provider.Settings
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -31,15 +33,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.ui.theme.DarkSurfaceVariant
-import com.example.ui.theme.StatusGreen
-import com.example.ui.theme.StatusRed
+import com.example.ui.theme.RainbowBrushSoft
+import com.example.ui.theme.RainbowIndigo
+import com.example.ui.theme.StatusSuccess
+import com.example.ui.theme.StatusWarning
 
 @Composable
 fun PermissionManagerScreen(
@@ -55,13 +59,13 @@ fun PermissionManagerScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = "Permission Dashboard",
+            text = "System Access & Permissions",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.onSurface
         )
         Text(
-            text = "PhonePilot respects Android security rules and requires explicit user consent.",
+            text = "Enable access so PhonePilot AI can control your screen, type keyboard commands, and automate tasks.",
             fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -73,8 +77,8 @@ fun PermissionManagerScreen(
         ) {
             item {
                 PermissionCard(
-                    title = "Accessibility Service",
-                    description = "Enables PhonePilot to click buttons, scroll screens, and automate UI actions on your behalf.",
+                    title = "Screen & Keyboard Automation (Accessibility)",
+                    description = "Required to open apps, click buttons, enter search text, and control screen interactions when you give voice or text commands.",
                     isGranted = isAccessibilityEnabled,
                     icon = Icons.Default.Accessibility,
                     testTag = "enable_accessibility_button",
@@ -89,8 +93,8 @@ fun PermissionManagerScreen(
 
             item {
                 PermissionCard(
-                    title = "Notification Listener Service",
-                    description = "Intercepts incoming notifications and enables AI auto-replies for apps like Instagram or WhatsApp.",
+                    title = "Notification Listener",
+                    description = "Intercepts notifications so PhonePilot can compose and send smart auto-replies.",
                     isGranted = isNotificationListenerEnabled,
                     icon = Icons.Default.Notifications,
                     testTag = "enable_notification_listener_button",
@@ -105,8 +109,8 @@ fun PermissionManagerScreen(
 
             item {
                 PermissionCard(
-                    title = "Microphone Permission",
-                    description = "Enables real-time continuous listening and speech recognition for hands-free JARVIS-style commands.",
+                    title = "Microphone Access",
+                    description = "Enables real-time continuous voice command listening.",
                     isGranted = true, // Managed dynamically
                     icon = Icons.Default.Mic,
                     testTag = "enable_mic_permission_button",
@@ -143,8 +147,14 @@ fun PermissionCard(
     onGrantClick: () -> Unit
 ) {
     Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurfaceVariant),
-        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(
+                BorderStroke(1.dp, if (isGranted) SolidColor(StatusSuccess.copy(alpha = 0.3f)) else RainbowBrushSoft),
+                shape = RoundedCornerShape(16.dp)
+            ),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -155,7 +165,7 @@ fun PermissionCard(
                 Icon(
                     imageVector = icon,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
+                    tint = RainbowIndigo,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -169,7 +179,7 @@ fun PermissionCard(
                 Icon(
                     imageVector = if (isGranted) Icons.Default.CheckCircle else Icons.Default.Warning,
                     contentDescription = null,
-                    tint = if (isGranted) StatusGreen else StatusRed,
+                    tint = if (isGranted) StatusSuccess else StatusWarning,
                     modifier = Modifier.size(20.dp)
                 )
             }
@@ -187,18 +197,20 @@ fun PermissionCard(
             Button(
                 onClick = onGrantClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = if (isGranted) StatusGreen.copy(alpha = 0.2f) else MaterialTheme.colorScheme.primary
+                    containerColor = if (isGranted) StatusSuccess.copy(alpha = 0.15f) else RainbowIndigo
                 ),
-                shape = RoundedCornerShape(8.dp),
+                shape = RoundedCornerShape(12.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .testTag(testTag)
             ) {
                 Text(
-                    text = if (isGranted) "Permission Active" else "Enable Permission",
-                    color = if (isGranted) StatusGreen else MaterialTheme.colorScheme.onPrimary
+                    text = if (isGranted) "Permission Active ✓" else "Grant Permission",
+                    color = if (isGranted) StatusSuccess else MaterialTheme.colorScheme.onPrimary,
+                    fontWeight = FontWeight.SemiBold
                 )
             }
         }
     }
 }
+

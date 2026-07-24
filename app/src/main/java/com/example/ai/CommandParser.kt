@@ -88,6 +88,23 @@ class CommandParser {
                     rawCommand = text
                 )
             }
+            if (appName.contains(" and search ", ignoreCase = true)) {
+                val parts = appName.split(" and search ", ignoreCase = true)
+                return ParsedCommand(
+                    actionType = CommandAction.SEARCH_APP,
+                    primaryTarget = parts[0].trim(),
+                    secondaryTarget = parts[1].replace("for ", "").trim(),
+                    rawCommand = text
+                )
+            }
+            if (lower.contains("open chat") || lower.contains("open conversation")) {
+                val target = text.substringAfter("chat").substringAfter("with").trim()
+                return ParsedCommand(
+                    actionType = CommandAction.CLICK_TEXT,
+                    primaryTarget = target.ifEmpty { "Chat" },
+                    rawCommand = text
+                )
+            }
             return ParsedCommand(
                 actionType = CommandAction.OPEN_APP,
                 primaryTarget = appName,
@@ -98,6 +115,23 @@ class CommandParser {
         // 3. Search pattern
         if (lower.startsWith("search for ") || lower.startsWith("search ")) {
             val query = text.substringAfter("search").replace("for ", "").trim()
+            if (query.contains(" on ", ignoreCase = true)) {
+                val parts = query.split(" on ", ignoreCase = true)
+                return ParsedCommand(
+                    actionType = CommandAction.SEARCH_APP,
+                    primaryTarget = parts[1].trim(),
+                    secondaryTarget = parts[0].trim(),
+                    rawCommand = text
+                )
+            } else if (query.contains(" in ", ignoreCase = true)) {
+                val parts = query.split(" in ", ignoreCase = true)
+                return ParsedCommand(
+                    actionType = CommandAction.SEARCH_APP,
+                    primaryTarget = parts[1].trim(),
+                    secondaryTarget = parts[0].trim(),
+                    rawCommand = text
+                )
+            }
             return ParsedCommand(
                 actionType = CommandAction.SEARCH_APP,
                 primaryTarget = "",

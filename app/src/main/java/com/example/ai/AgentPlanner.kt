@@ -108,11 +108,16 @@ class AgentPlanner(private val context: Context) {
             CommandAction.SEARCH_APP -> {
                 if (cmd.primaryTarget.isNotEmpty()) {
                     appLauncher.launchAppByName(cmd.primaryTarget)
-                    delay(1500)
+                    delay(1800)
                 }
-                uiNavigator.clickSearchButton()
-                delay(800)
-                uiNavigator.typeText(cmd.secondaryTarget)
+                val clickedSearch = uiNavigator.clickSearchButton()
+                if (clickedSearch) delay(800)
+                val typed = uiNavigator.typeText(cmd.secondaryTarget)
+                if (typed) {
+                    delay(800)
+                    uiNavigator.clickSendButton()
+                }
+                true
             }
             CommandAction.SET_VOLUME -> {
                 settingsController.setVolume(cmd.numericValue)

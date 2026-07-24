@@ -54,12 +54,15 @@ import com.example.ui.theme.DarkSurfaceVariant
 import com.example.ui.theme.PhonePilotTheme
 import com.example.voice.WakeWordService
 
+import androidx.compose.ui.text.font.FontWeight
+import com.example.ui.theme.RainbowIndigo
+
 enum class AppTab(val title: String, val icon: ImageVector) {
     CHAT("Chat", Icons.Default.Chat),
     VOICE("Voice", Icons.Default.Mic),
     AUTOMATION("Automate", Icons.Default.AutoAwesome),
     MEMORY("Memory", Icons.Default.Psychology),
-    PERMISSIONS("Permissions", Icons.Default.Security),
+    PERMISSIONS("Access", Icons.Default.Security),
     NOTIFICATIONS("Alerts", Icons.Default.Notifications),
     LOGS("Logs", Icons.Default.ListAlt),
     SETTINGS("Settings", Icons.Default.Settings)
@@ -106,8 +109,8 @@ class MainActivity : ComponentActivity() {
                 Scaffold(
                     bottomBar = {
                         NavigationBar(
-                            containerColor = DarkSurfaceVariant,
-                            tonalElevation = 8.dp,
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            tonalElevation = 6.dp,
                             modifier = Modifier.testTag("app_navigation_bar")
                         ) {
                             AppTab.entries.forEach { tab ->
@@ -115,11 +118,11 @@ class MainActivity : ComponentActivity() {
                                     selected = selectedTab == tab,
                                     onClick = { selectedTab = tab },
                                     icon = { Icon(imageVector = tab.icon, contentDescription = tab.title) },
-                                    label = { Text(tab.title, fontSize = 10.sp) },
+                                    label = { Text(tab.title, fontSize = 10.sp, fontWeight = if (selectedTab == tab) FontWeight.Bold else FontWeight.Normal) },
                                     colors = NavigationBarItemDefaults.colors(
-                                        selectedIconColor = MaterialTheme.colorScheme.onPrimary,
-                                        selectedTextColor = MaterialTheme.colorScheme.primary,
-                                        indicatorColor = MaterialTheme.colorScheme.primary,
+                                        selectedIconColor = RainbowIndigo,
+                                        selectedTextColor = RainbowIndigo,
+                                        indicatorColor = RainbowIndigo.copy(alpha = 0.15f),
                                         unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                         unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

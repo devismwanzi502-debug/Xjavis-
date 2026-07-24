@@ -82,6 +82,26 @@ class PhonePilotAccessibilityService : AccessibilityService() {
         return nodes?.firstOrNull()
     }
 
+    fun findNodesByContentDescription(desc: String): List<AccessibilityNodeInfo> {
+        val root = rootInActiveWindow ?: return emptyList()
+        val result = mutableListOf<AccessibilityNodeInfo>()
+        traverseForDescription(root, desc, result)
+        return result
+    }
+
+    private fun traverseForDescription(node: AccessibilityNodeInfo, targetDesc: String, result: MutableList<AccessibilityNodeInfo>) {
+        val contentDesc = node.contentDescription?.toString() ?: ""
+        if (contentDesc.contains(targetDesc, ignoreCase = true)) {
+            result.add(node)
+        }
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i)
+            if (child != null) {
+                traverseForDescription(child, targetDesc, result)
+            }
+        }
+    }
+
     fun clickNodeByText(text: String): Boolean {
         val nodes = findNodesByText(text)
         for (node in nodes) {
@@ -90,6 +110,49 @@ class PhonePilotAccessibilityService : AccessibilityService() {
             }
         }
         return false
+    }
+
+    fun clickNodeByDescription(desc: String): Boolean {
+        val nodes = findNodesByContentDescription(desc)
+        for (node in nodes) {
+            if (performClickOnNodeOrParent(node)) {
+                return true
+            }
+        }
+        return false
+    }
+
+    fun clickSearchIconOrButton(): Boolean {
+        val root = rootInActiveWindow ?: return false
+        // 1. Check content descriptions for common search terms
+        val searchDescs = listOf("Search", "Search YouTube", "Find", "Magnifier")
+        for (desc in searchDescs) {
+            if (clickNodeByDescription(desc)) return true
+        }
+        // 2. Check node text
+        for (text in listOf("Search", "Search YouTube", "Search or type URL")) {
+            if (clickNodeByText(text)) return true
+        }
+        // 3. Search for editable field directly
+        val editable = findEditableNode(root)
+        if (editable != null) {
+            return performClickOnNodeOrParent(editable)
+        }
+        return false
+    }
+
+    private fun findEditableNode(node: AccessibilityNodeInfo): AccessibilityNodeInfo? {
+        if (node.isEditable || node.className?.toString()?.contains("EditText", ignoreCase = true) == true) {
+            return node
+        }
+        for (i in 0 until node.childCount) {
+            val child = node.getChild(i)
+            if (child != null) {
+                val found = findEditableNode(child)
+                if (found != null) return found
+            }
+        }
+        return null
     }
 
     fun performClickOnNodeOrParent(node: AccessibilityNodeInfo?): Boolean {
@@ -135,11 +198,17 @@ class PhonePilotAccessibilityService : AccessibilityService() {
 
     fun inputTextToFocusedField(text: String): Boolean {
         val root = rootInActiveWindow ?: return false
-        val focused = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
-        if (focused != null) {
+        var targetNode = root.findFocus(AccessibilityNodeInfo.FOCUS_INPUT)
+        if (targetNode == null) {
+            targetNode = findEditableNode(root)
+            targetNode?.performAction(AccessibilityNodeInfo.ACTION_FOCUS)
+        }
+
+        if (targetNode != null) {
             val arguments = Bundle()
             arguments.putCharSequence(AccessibilityNodeInfo.ACTION_ARGUMENT_SET_TEXT_CHARSEQUENCE, text)
-            return focused.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+            val success = targetNode.performAction(AccessibilityNodeInfo.ACTION_SET_TEXT, arguments)
+            return success
         }
         return false
     }
