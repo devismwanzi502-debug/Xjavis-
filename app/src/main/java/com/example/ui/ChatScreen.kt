@@ -93,6 +93,8 @@ fun ChatScreen(
     }
 
     val quickPrompts = listOf(
+        "Hello Jarvis, open TikTok and scroll for 30 minutes",
+        "Hello Jarvis, open Call of Duty and go to rank lobby",
         "Open YouTube and search for Dylian Paige",
         "Open chat with Mom and say Hello",
         "Switch to Dark Mode",
@@ -331,6 +333,43 @@ fun ChatScreen(
         }
 
         Spacer(modifier = Modifier.weight(1f))
+
+        // Live Typing & Speech Transcribing Real-Time Visualizer
+        AnimatedVisibility(visible = inputQuery.isNotBlank() || isListening) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp, start = 4.dp, end = 4.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(RainbowIndigo.copy(alpha = 0.1f))
+                    .border(BorderStroke(1.dp, RainbowIndigo.copy(alpha = 0.3f)), shape = RoundedCornerShape(12.dp))
+                    .padding(horizontal = 12.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = if (isListening) Icons.Default.Mic else Icons.Default.AutoAwesome,
+                    contentDescription = null,
+                    tint = RainbowIndigo,
+                    modifier = Modifier.size(14.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isListening) "Transcribing live speech..." else "Live Command Preview (${inputQuery.length} chars)",
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = RainbowIndigo,
+                    modifier = Modifier.weight(1f)
+                )
+                if (inputQuery.isNotBlank()) {
+                    Text(
+                        text = "Ready",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = StatusSuccess
+                    )
+                }
+            }
+        }
 
         // Input Field Bar
         Row(

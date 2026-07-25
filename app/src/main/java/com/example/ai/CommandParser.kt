@@ -20,14 +20,32 @@ enum class CommandAction {
     GAMING_MODE,
     GO_HOME,
     GO_BACK,
+    LONG_SCROLL_LOOP,
+    GAME_LOBBY_NAVIGATE,
     UNKNOWN_COMPLEX
 }
 
 class CommandParser {
 
     fun parseChain(input: String): List<ParsedCommand> {
-        val text = input.trim()
+        var text = input.trim()
         if (text.isEmpty()) return emptyList()
+
+        // Strip wake words if present at the beginning
+        val wakeWords = listOf("hello jarvis", "hey jarvis", "jarvis", "ok jarvis", "hello phone pilot", "hey phone pilot", "phone pilot", "hey pilot")
+        for (ww in wakeWords) {
+            if (text.lowercase().startsWith(ww)) {
+                text = text.substring(ww.length).trim().removePrefix(",").removePrefix(".").trim()
+                if (text.lowercase().startsWith("please ")) {
+                    text = text.substring(7).trim()
+                }
+                break
+            }
+        }
+
+        if (text.isEmpty()) {
+            return listOf(ParsedCommand(actionType = CommandAction.UNKNOWN_COMPLEX, rawCommand = input))
+        }
 
         // Replace common clause connectors with a standardized delimiter " | "
         var normalized = text
@@ -66,7 +84,40 @@ class CommandParser {
     private fun parseSingle(text: String): ParsedCommand {
         val lower = text.lowercase().trim()
 
-        // 1. Dark Mode / Switch theme
+        // 1. Long scroll loop pattern e.g. "scroll for 30 minutes", "open tiktok and scroll for 30 minutes"
+        if (lower.contains("scroll") && (lower.contains("minute") || lower.contains("min") || lower.contains("second") || lower.contains("sec") || lower.contains("hour"))) {
+            var targetApp = ""
+            val apps = listOf("tiktok", "youtube", "instagram", "reels", "shorts", "twitter", "x", "facebook", "reddit")
+            for (app in apps) {
+                if (lower.contains(app)) {
+                    targetApp = app
+                    break
+                }
+            }
+            // Parse duration minutes
+            val durationDigits = lower.replace("30", "30").filter { it.isDigit() }
+            val minutes = durationDigits.toIntOrNull() ?: 5
+            return ParsedCommand(
+                actionType = CommandAction.LONG_SCROLL_LOOP,
+                primaryTarget = targetApp.ifEmpty { "TikTok" },
+                numericValue = minutes,
+                rawCommand = text
+            )
+        }
+
+        // 2. Call of Duty / Game lobby pattern e.g. "open call of duty and go to rank lobby", "go to rank lobby"
+        if ((lower.contains("call of duty") || lower.contains("cod") || lower.contains("game") || lower.contains("pubg")) &&
+            (lower.contains("rank") || lower.contains("lobby") || lower.contains("multiplayer") || lower.contains("play"))) {
+            val game = if (lower.contains("pubg")) "PUBG Mobile" else "Call of Duty"
+            return ParsedCommand(
+                actionType = CommandAction.GAME_LOBBY_NAVIGATE,
+                primaryTarget = game,
+                secondaryTarget = "Ranked Lobby",
+                rawCommand = text
+            )
+        }
+
+        // 3. Dark Mode / Switch theme
         if (lower.contains("dark mode") || lower.contains("dark theme") || lower.contains("switch to dark") || lower.contains("enable dark")) {
             val isOff = lower.contains("off") || lower.contains("light") || lower.contains("disable")
             return ParsedCommand(
@@ -76,7 +127,7 @@ class CommandParser {
             )
         }
 
-        // 2. Open app pattern
+        // 4. Open app pattern
         if (lower.startsWith("open ") || lower.startsWith("launch ")) {
             val appName = text.substringAfter(" ").trim()
             if (appName.contains(" and search for ", ignoreCase = true)) {
@@ -112,7 +163,7 @@ class CommandParser {
             )
         }
 
-        // 3. Search pattern
+        // 5. Search pattern
         if (lower.startsWith("search for ") || lower.startsWith("search ")) {
             val query = text.substringAfter("search").replace("for ", "").trim()
             if (query.contains(" on ", ignoreCase = true)) {
@@ -140,7 +191,7 @@ class CommandParser {
             )
         }
 
-        // 4. Click / Tap text
+        // 6. Click / Tap text
         if (lower.startsWith("click ") || lower.startsWith("tap ") || lower.startsWith("press ")) {
             val target = text.substringAfter(" ").trim()
             return ParsedCommand(
@@ -150,7 +201,7 @@ class CommandParser {
             )
         }
 
-        // 5. Type text
+        // 7. Type text
         if (lower.startsWith("type ") || lower.startsWith("enter ") || lower.startsWith("input ")) {
             val value = text.substringAfter(" ").trim()
             return ParsedCommand(
@@ -160,7 +211,7 @@ class CommandParser {
             )
         }
 
-        // 6. Gaming mode pattern
+        // 8. Gaming mode pattern
         if (lower.contains("gaming mode")) {
             return ParsedCommand(
                 actionType = CommandAction.GAMING_MODE,
@@ -169,7 +220,7 @@ class CommandParser {
             )
         }
 
-        // 7. Volume pattern
+        // 9. Volume pattern
         if (lower.contains("volume")) {
             val digits = lower.filter { it.isDigit() }
             val vol = digits.toIntOrNull() ?: 50
@@ -180,7 +231,7 @@ class CommandParser {
             )
         }
 
-        // 8. Do Not Disturb pattern
+        // 10. Do Not Disturb pattern
         if (lower.contains("do not disturb") || lower.contains("dnd")) {
             return ParsedCommand(
                 actionType = CommandAction.TOGGLE_DND,
@@ -189,7 +240,7 @@ class CommandParser {
             )
         }
 
-        // 9. Open website pattern
+        // 11. Open website pattern
         if (lower.startsWith("open website") || lower.contains("http://") || lower.contains("https://")) {
             val url = text.substringAfter("website").trim()
             return ParsedCommand(
@@ -199,7 +250,7 @@ class CommandParser {
             )
         }
 
-        // 10. Navigation
+        // 12. Navigation
         if (lower == "go home" || lower == "home screen" || lower == "home") {
             return ParsedCommand(actionType = CommandAction.GO_HOME, rawCommand = text)
         }

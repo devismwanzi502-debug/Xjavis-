@@ -66,6 +66,20 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     val isSpeaking = ttsManager.isSpeaking
     val recognizedText = speechManager.recognizedText
 
+    init {
+        viewModelScope.launch {
+            recognizedText.collect { text ->
+                if (text.isNotBlank()) {
+                    val lower = text.lowercase()
+                    if (lower.startsWith("hello jarvis") || lower.startsWith("hey jarvis") || lower.startsWith("jarvis") || lower.startsWith("hello phone pilot")) {
+                        // Automatically run wake word command
+                        sendUserCommand(text)
+                    }
+                }
+            }
+        }
+    }
+
     fun sendUserCommand(command: String) {
         viewModelScope.launch {
             agentPlanner.executeUserCommand(command)

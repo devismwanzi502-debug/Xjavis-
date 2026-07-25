@@ -146,6 +146,38 @@ class AgentPlanner(private val context: Context) {
                 settingsController.setVolume(80)
                 true
             }
+            CommandAction.LONG_SCROLL_LOOP -> {
+                val app = cmd.primaryTarget.ifEmpty { "TikTok" }
+                val minutes = if (cmd.numericValue <= 0) 5 else cmd.numericValue
+                appLauncher.launchAppByName(app)
+                delay(2500)
+                // Execute continuous scroll loop
+                val totalScrolls = minOf(minutes * 6, 60) // Up to 60 scroll actions per request block
+                for (i in 1..totalScrolls) {
+                    _lastMessage.value = "Scrolling $app (Cycle $i/$totalScrolls for $minutes mins)..."
+                    gestureExecutor.swipeUp()
+                    delay(3500) // Watch 3.5s per video
+                }
+                true
+            }
+            CommandAction.GAME_LOBBY_NAVIGATE -> {
+                val gameName = cmd.primaryTarget.ifEmpty { "Call of Duty" }
+                settingsController.setDoNotDisturb(true)
+                settingsController.setVolume(85)
+                appLauncher.launchAppByName(gameName)
+                delay(3000)
+                _lastMessage.value = "Entering $gameName Ranked Lobby..."
+                val clickedRank = uiNavigator.clickText("Ranked") ||
+                        uiNavigator.clickText("Multiplayer") ||
+                        uiNavigator.clickText("Lobby") ||
+                        uiNavigator.clickText("Ranked Match") ||
+                        uiNavigator.clickText("Start")
+                if (!clickedRank) {
+                    delay(2000)
+                    uiNavigator.clickText("Play") || uiNavigator.clickText("Battle Royale")
+                }
+                true
+            }
             CommandAction.UNKNOWN_COMPLEX -> {
                 executeStepString(cmd.rawCommand)
                 true
@@ -182,6 +214,8 @@ class AgentPlanner(private val context: Context) {
             CommandAction.GO_BACK -> "Navigate Back"
             CommandAction.OPEN_WEBSITE -> "Open Website ${cmd.primaryTarget}"
             CommandAction.GAMING_MODE -> "Activate Gaming Mode"
+            CommandAction.LONG_SCROLL_LOOP -> "Auto-scroll ${cmd.primaryTarget.ifEmpty { "TikTok" }} for ${if (cmd.numericValue <= 0) 5 else cmd.numericValue} mins"
+            CommandAction.GAME_LOBBY_NAVIGATE -> "Launch ${cmd.primaryTarget} & Navigate to ${cmd.secondaryTarget}"
             CommandAction.UNKNOWN_COMPLEX -> cmd.rawCommand
         }
     }
@@ -200,6 +234,8 @@ class AgentPlanner(private val context: Context) {
             CommandAction.GO_BACK -> "Navigated Back."
             CommandAction.OPEN_WEBSITE -> "Opened ${cmd.primaryTarget}."
             CommandAction.GAMING_MODE -> "Gaming Mode activated."
+            CommandAction.LONG_SCROLL_LOOP -> "Completed continuous scrolling in ${cmd.primaryTarget.ifEmpty { "TikTok" }}."
+            CommandAction.GAME_LOBBY_NAVIGATE -> "Entered ${cmd.primaryTarget} ${cmd.secondaryTarget}."
             CommandAction.UNKNOWN_COMPLEX -> "Action performed."
         }
     }
